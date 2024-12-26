@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>購物車</title>
+    <!-- 引入 Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <style>
+        body {
+            background-color: #f9f9f9;
+            font-family: "Arial", "Helvetica", sans-serif;
+        }
+
+        .main-content {
+            padding: 60px 20px;
+            background-color: #f9f9f9;
+            min-height: 100vh;
+        }
+
+        .cart-container {
+            background: #ffffff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .cart-header {
+            padding: 10px;
+            border-bottom: 2px solid #e9ecef;
+            font-size: 1.5rem;
+            color: #343a40;
+            font-weight: bold;
+        }
+
+        .cart-item {
+            border-bottom: 1px solid #e9ecef;
+            padding: 20px 0;
+        }
+
+        .cart-item:last-child {
+            border-bottom: none;
+        }
+
+        .item-image {
+            max-width: 100px;
+            border-radius: 10px;
+            object-fit: cover;
+        }
+
+        .item-info {
+            flex-grow: 1;
+            padding: 0 15px;
+        }
+
+        .item-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .item-price {
+            font-size: 1rem;
+            font-weight: bold;
+            color: #e74c3c;
+        }
+
+        .quantity-control {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .remove-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            font-size: 0.9rem;
+            padding: 5px 10px;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        .remove-btn:hover {
+            background-color: #b02a37;
+        }
+
+        .cart-total {
+            padding: 15px;
+            border-top: 2px solid #e9ecef;
+            font-size: 1.2rem;
+            text-align: right;
+            font-weight: bold;
+            color: #343a40;
+        }
+
+        .checkout-container {
+            text-align: right;
+            margin-top: 20px;
+        }
+
+        .checkout-btn {
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 1rem;
+            text-transform: uppercase;
+            transition: background-color 0.3s;
+        }
+
+        .checkout-btn:hover {
+            background-color: #43a047;
+        }
+
+        footer {
+            padding: 20px;
+            background-color: #343a40;
+            color: #ffffff;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+	<!-- 引入 Header -->
+	<div th:replace="~{layout/userHeader}"></div>
+
+    <!-- 主要內容 -->
+    <main class="main-content">
+        <div class="container my-5">
+            <div class="cart-container">
+                <h2 class="text-center mb-4">購物車</h2>
+                <div id="cart-items"></div>
+                <div class="total text-end" id="total"></div>
+                <button type="button" class="checkout-btn btn btn-success" id="checkout-btn" onclick="checkout()">結帳</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- 頁腳 -->
+    <footer>
+        <p>© 2024 我的商店</p>
+    </footer>
+
+    <script>
+        // 檢查用戶是否已登入
+        async function checkLogin() {
+            try {
+                const response = await fetch('/api/check-login', {
+                    method: 'GET',
+                    credentials: 'include' // 攜帶 Cookie
+                });
+
+                if (!response.ok || !(await response.json())) {
+                    throw new Error("未登入");
+                }
+            } catch (error) {
+                alert("您尚未登入，將跳轉到登入頁面");
+                window.location.href = "/login"; // 重定向到登入頁面
+            }
+        }
+
+        async function loadCart() {
+            try {
+                await checkLogin(); // 確保使用者已登入
+                const response = await fetch('/api/cart', {
+                    method: 'GET',
+                    credentials: 'include' // 攜帶 Session
+                });
+
+                if (!response.ok) throw new Error("無法取得購物車資料");
+                const cart = await response.json();
+                renderCart(cart);
+            } catch (error) {
+                console.error(error.message);
+                alert("載入購物車失敗，請稍後再試");
+            }
+        }
+        
+        document.addEventListener("DOMContentLoaded", function () {
+    // 移除不必要的表單處理代碼
+    // const checkoutForm = document.getElementById("checkout-form");
+    // if (checkoutForm) {
+    //     checkoutForm.addEventListener("submit", submitOrder);
+    // }
+});
+
+        
+        function loadCartSummary() {
+            const cartSummaryContainer = document.getElementById("cart-summary");
+
+            if (!cartSummaryContainer) {
+                console.warn("Element 'cart-summary' not found.");
+                return; // 如果該元素不存在，則跳過
+            }
+
+            const cartItems = JSON.parse(localStorage.getItem("cartItems"));
+            const cartTotal = localStorage.getItem("cartTotal");
+
+            if (!cartItems || cartItems.length === 0) {
+                cartSummaryContainer.innerHTML = "<li class='list-group-item'>您的購物車是空的。</li>";
+                return;
+            }
+
+            cartItems.forEach(item => {
+                const listItem = document.createElement("li");
+                listItem.className = "list-group-item";
+                listItem.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-8">${item.itemName} x ${item.itemQuantity}</div>
+                        <div class="col-md-4 text-end">$${item.itemPrice.toFixed(2)}</div>
+                    </div>
+                `;
+                cartSummaryContainer.appendChild(listItem);
+            });
+
+            const totalItem = document.createElement("li");
+            totalItem.className = "list-group-item text-end fw-bold";
+            totalItem.textContent = `總計: $${parseFloat(cartTotal).toFixed(2)}`;
+            cartSummaryContainer.appendChild(totalItem);
+        }
+
+
+        async function submitOrder(event) {
+            event.preventDefault(); // 阻止表單默認提交行為
+
+            const recipientName = document.getElementById("recipient").value;
+            const address = document.getElementById("address").value;
+            const shippingMethod = document.getElementById("shipping-method").value;
+            const cartItems = JSON.parse(localStorage.getItem("cartItems"));
+
+            if (!recipientName || !address || !shippingMethod || !cartItems) {
+                alert("請填寫完整的物流資訊或檢查購物車內容！");
+                return;
+            }
+
+            const orderData = {
+                recipientName,
+                address,
+                shippingMethod,
+                cartItems
+            };
+
+            try {
+                const response = await fetch('/api/cart/checkout', {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(orderData)
+                });
+
+                if (!response.ok) throw new Error("提交訂單失敗");
+
+                const result = await response.json();
+                alert("訂單提交成功！訂單編號：" + result.orderId);
+
+                // 清除本地存儲並跳轉到付款頁面
+                localStorage.removeItem("cartItems");
+                localStorage.removeItem("cartTotal");
+                window.location.href = result.redirectUrl;
+            } catch (error) {
+                console.error(error.message);
+                alert("提交訂單失敗：" + error.message);
+            }
+        }
+        
+        function renderCart(cart) {
+    const cartItemsContainer = document.getElementById('cart-items');
+    const totalContainer = document.getElementById('total');
+    const checkoutBtn = document.getElementById('checkout-btn'); // ← 取得結帳按鈕
+
+    cartItemsContainer.innerHTML = ''; // 清空現有內容
+
+    if (!cart.cartItems || cart.cartItems.length === 0) {
+        cartItemsContainer.innerHTML = '<p>您的購物車是空的。</p>';
+        totalContainer.textContent = '';
+        checkoutBtn.disabled = true; // ← 如果購物車為空，停用結帳按鈕
+        return;
+    }
+
+    // 有商品 → 開啟結帳按鈕
+    checkoutBtn.disabled = false; // ← 若有項目，啟用結帳按鈕
+
+    cart.cartItems.forEach(item => {
+        if (!item || !item.itemName) {
+            console.error("購物車項目資料缺失", item);
+            return;
+        }
+
+        const cartItemDiv = document.createElement('div');
+        cartItemDiv.className = 'cart-item p-3';
+
+        const imageUrl = item.imageUrl || '/images/default-placeholder.png';
+
+        // 在這裡插入動態生成的商品連結
+        const link = `/cart/item/${item.itemId}`; // 確保使用正確的 itemId
+        cartItemsContainer.innerHTML += `
+            <div class="row">
+                <div class="col-md-3">
+                    <img src="${imageUrl}" alt="${item.itemName}" class="img-fluid">
+                </div>
+                <div class="col-md-5">
+                    <!-- 動態生成的商品連結 -->
+                    <a href="${link}" class="text-decoration-none text-primary">
+                        <h5>${item.itemName}</h5>
+                    </a>
+
+                    <p>${item.itemInfo || '無詳細描述'}</p>
+                    <p>尺寸: <span class="badge bg-secondary">${item.itemSizeName || '未指定'}</span></p> <!-- 新增尺寸欄位 -->
+                </div>
+                <div class="col-md-2">
+                    <p>價格: $${item.itemPrice.toFixed(2)}</p>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" min="1" value="${item.itemQuantity}" class="form-control" onchange="updateQuantity(${item.cartItemId}, this.value)">
+                </div>
+                <div class="col-md-2 mt-2">
+                    <button class="btn btn-danger remove-btn" onclick="confirmRemoveFromCart(${item.cartItemId})">刪除</button>
+                </div>
+            </div>
+        `;
+
+        cartItemsContainer.appendChild(cartItemDiv);
+    });
+
+    totalContainer.textContent = `總計: $${cart.cartTotal.toFixed(2)}`;
+}
+
+
+
+        async function checkout() {
+            try {
+            	await checkLogin(); // 確保使用者已登入
+                const response = await fetch('/api/cart', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+
+                if (!response.ok) throw new Error("結帳失敗，請稍後再試");
+
+                const cart = await response.json();
+                localStorage.setItem("cartItems", JSON.stringify(cart.cartItems));
+                localStorage.setItem("cartTotal", cart.cartTotal);
+                window.location.href = "/cart/checkout";
+            } catch (error) {
+                console.error(error.message);
+                alert(error.message);
+            }
+        }
+		
+		async function confirmRemoveFromCart(cartItemId) {
+            const confirmDelete = confirm("您確定要移除此商品嗎？");
+            if (!confirmDelete) return;
+
+            try {
+                const response = await fetch(`/api/cart/items/${cartItemId}`, { method: 'DELETE', credentials: 'include' });
+                if (!response.ok) throw new Error("移除商品失敗");
+                loadCart();
+            } catch (error) {
+                console.error(error.message);
+                alert(error.message);
+            }
+        }
+		
+
+        
+        async function updateQuantity(cartItemId, quantity) {
+    	console.log("Updating quantity for cartItemId:", cartItemId);
+    	if (quantity <= 0) {
+        	alert("數量必須大於 0");
+        	return;
+    	}
+
+            try {
+                const response = await fetch(`/api/cart/items/${cartItemId}?quantity=${quantity}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ quantity: parseInt(quantity, 10) }),
+                    credentials: 'include'
+                });
+                if (!response.ok) {
+            console.error("更新數量失敗:", await response.text());
+            throw new Error("更新數量失敗");
+        }
+        loadCart();
+    } catch (error) {
+        console.error(error.message);
+        alert(error.message);
+    }
+        }
+
+
+        async function removeFromCart(cartItemId) {
+            try {
+                const response = await fetch(`/api/cart/items/${cartItemId}`, {
+                    method: 'DELETE'
+                });
+                if (!response.ok) throw new Error("移除商品失敗");
+                loadCart();
+            } catch (error) {
+                console.error(error.message);
+                alert(error.message);
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", loadCart);
+    </script>
+</body>
+</html>

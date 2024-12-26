@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>我的會員中心 - 購買清單</title>
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+    <link th:href="@{/css/custom.css}" rel="stylesheet">
+    <script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+    <script th:src="@{/js/jquery.min.js}"></script>
+
+    <style>
+        #mainContent {
+            width: 70%;
+            max-width: 1400px;
+            min-width: 900px;
+            margin: 0 auto;
+            padding: 32px;
+            border-radius: 10px;
+        }
+        .form-title {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .nav-tabs .nav-link {
+            color: #007bff;
+            font-weight: bold;
+            padding: 10px 15px;
+            border: none;
+        }
+        .nav-tabs .nav-link.active {
+            color: #fff;
+            background-color: #007bff;
+            border-radius: 5px;
+        }
+        .nav-tabs .nav-link:hover {
+            color: #fff;
+            background-color: #007bff;
+            border-radius: 5px;
+        }
+        .tabs-container {
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+        .search-bar {
+            margin: 20px 0;
+        }
+        .search-input {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <!-- 共用頂部 -->
+    <div th:replace="~{layout/userHeader}"></div>
+
+    <div class="d-flex" style="height: 100vh;">
+        <!-- 左側側邊欄 -->
+        <div th:replace="~{layout/memberCenterSidebar}"></div>
+
+        <!-- 主要內容區 -->
+        <div id="mainContent" class="p-4">
+            <h2 class="form-title">購買清單</h2>
+
+            <!-- 標籤欄 -->
+            <div class="tabs-container">
+                <ul class="nav nav-tabs justify-content-center" id="orderTabs">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" onclick="filterOrders('all')">全部</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="filterOrders('Pending')">待處理</a> <!-- 新增 -->
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="filterOrders('Processing')">處理中</a> <!-- 新增 -->
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="filterOrders('Unpaid')">待付款</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="filterOrders('Not Shipped')">待出貨</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="filterOrders('Pending Receipt')">待收貨</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="filterOrders('Completed')">已完成</a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- 搜尋欄 -->
+            <div class="search-bar text-center">
+                <input type="text" id="searchInput" class="form-control search-input"
+                       placeholder="搜尋訂單內容、編號或商品名稱">
+            </div>
+            <div id="pagination-container" class="d-flex justify-content-center mt-4">
+    <!-- 分頁按鈕將由 JavaScript 動態生成 -->
+</div>
+            
+
+            <!-- 動態渲染訂單 -->
+            <div id="contentArea">
+                <div th:each="order : ${buyerOrders}" 
+                     class="container mb-4 bg-light p-4 rounded" 
+                     th:data-status="${order.orderStatus}">
+                    <!-- 隱藏英文狀態，用於搜尋（可選） -->
+                    <span th:text="${order.orderStatus}" style="display:none;"></span>
+
+                    <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                        <div>
+                            <a href="#" class="text-dark fw-bold" th:text="${order.orderItems[0].seller.userName}">商店名稱</a>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-info"
+      th:text="${order.orderStatus == 'Pending' ? '待處理' : 
+                order.orderStatus == 'Processing' ? '處理中' : 
+                order.orderStatus == 'Completed' ? '已完成' : 
+                order.orderStatus == 'Cancelled' ? '取消' : 
+                order.orderStatus == 'Refunded' ? '退貨/退款' : 
+                order.orderStatus == 'Not Shipped' ? '未出貨' : 
+                order.orderStatus == 'Pending Receipt' ? '待收貨' : '其他'}">
+    訂單狀態
+</span>
+
+                        </div>
+                    </div>
+
+                    <!-- 商品列表 -->
+                    <div class="border-bottom py-3" th:each="orderItem : ${order.orderItems}">
+                        <a href="#" class="d-block text-decoration-none text-dark">
+                            <div class="d-flex align-items-start mb-3">
+                                <img th:if="${orderItem.itemPhoto != null}"
+                                     th:src="'data:image/jpeg;base64,' + T(java.util.Base64).getEncoder().encodeToString(orderItem.itemPhoto.photoFile)"
+                                     alt="商品圖片" class="me-3 rounded"/>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1" th:text="${orderItem.item.itemName}">商品名稱</h6>
+                                    <p class="text-muted" th:text="'規格：' + ${orderItem.itemSize.optionName}">商品規格</p>
+                                </div>
+                                <div class="text-end">
+                                    <p th:text="'單價：$' + ${orderItem.itemPrice}">單價</p>
+                                    <p th:text="'數量：x' + ${orderItem.itemQuantity}">數量</p>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+  <!-- 將分頁放在動態渲染訂單區域之後 -->
+
+                    <!-- 訂單總額與操作按鈕 -->
+                    <div class="d-flex flex-column align-items-end py-3">
+                        <h5 class="text-danger mb-3" th:text="'訂單總額：$' + ${order.orderTotal}">總金額</h5>
+                        <div class="d-flex">
+                            <form th:action="@{/orders/buyer/{orderId}/pay(orderId=${order.orderId})}" method="post">
+                                <button type="submit" class="btn btn-outline-primary me-2">付款</button>
+                            </form>
+
+                            <button class="btn btn-outline-secondary me-2">聯絡賣家</button>
+                            <button class="btn btn-outline-success">查看評價</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    		const ordersPerPage = 5; // 每頁顯示的訂單數量
+    let currentPage = 1;
+
+    function renderOrders() {
+        const orders = document.querySelectorAll('.container');
+        const totalPages = Math.ceil(orders.length / ordersPerPage);
+        
+        // 隱藏所有訂單
+        orders.forEach(order => order.style.display = 'none');
+
+        // 顯示當前頁面的訂單
+        const start = (currentPage - 1) * ordersPerPage;
+        const end = start + ordersPerPage;
+        orders.forEach((order, index) => {
+            if (index >= start && index < end) {
+                order.style.display = '';
+            }
+        });
+
+        renderPagination(totalPages);
+    }
+
+    function renderPagination(totalPages) {
+        const paginationContainer = document.getElementById('pagination-container');
+        paginationContainer.innerHTML = '';
+
+        // 上一頁按鈕
+        const prevButton = document.createElement('button');
+        prevButton.className = 'btn btn-outline-primary me-2';
+        prevButton.textContent = '上一頁';
+        prevButton.disabled = currentPage === 1;
+        prevButton.onclick = () => {
+            currentPage--;
+            renderOrders();
+        };
+        paginationContainer.appendChild(prevButton);
+
+        // 分頁按鈕
+        for (let i = 1; i <= totalPages; i++) {
+            const pageButton = document.createElement('button');
+            pageButton.className = `btn ${i === currentPage ? 'btn-primary' : 'btn-outline-primary'} me-2`;
+            pageButton.textContent = i;
+            pageButton.onclick = () => {
+                currentPage = i;
+                renderOrders();
+            };
+            paginationContainer.appendChild(pageButton);
+        }
+
+        // 下一頁按鈕
+        const nextButton = document.createElement('button');
+        nextButton.className = 'btn btn-outline-primary';
+        nextButton.textContent = '下一頁';
+        nextButton.disabled = currentPage === totalPages;
+        nextButton.onclick = () => {
+            currentPage++;
+            renderOrders();
+        };
+        paginationContainer.appendChild(nextButton);
+    }
+
+    // 初始化分頁
+    renderOrders();
+    
+    
+        // 搜尋功能
+        document.getElementById('searchInput').addEventListener('input', function () {
+            const query = this.value.toLowerCase();
+            const orders = document.querySelectorAll('.container');
+            orders.forEach(order => {
+                const text = order.textContent.toLowerCase();
+                order.style.display = text.includes(query) ? '' : 'none';
+            });
+        });
+
+        // 篩選訂單
+        function filterOrders(status) {
+            const orders = document.querySelectorAll('.container');
+            orders.forEach(order => {
+                const orderStatus = order.getAttribute('data-status');
+                if (status === 'all') {
+                    order.style.display = '';
+                } else {
+                    order.style.display = (orderStatus === status) ? '' : 'none';
+                }
+            });
+        }
+    </script>
+  
+    
+</body>
+</html>

@@ -1,0 +1,48 @@
+<!-- (Mantle)  -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>saHeader</title>
+    
+    <!-- import Bootstrap CSS -->
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+
+    <script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+
+    <script th:src="@{/js/axios.min.js}"></script>
+    
+</head>
+<body>
+    <header class="p-3 bg-dark text-white">
+        <div class="container-fluid">
+            <div class="d-flex flex-wrap align-items-center justify-content-between">
+            
+                <!-- 管理操作選單 -->
+                <ul class="nav me-auto">
+                    <li><a href="/" class="btn btn-warning text-black">CHKWGameStop</a></li>
+                    <li><a href="/saInfo" class="nav-link px-2 text-white">管理員資料總覽</a></li>
+                    <li><a href="/userInfo" class="nav-link px-2 text-white">會員資料總覽</a></li>
+                    <li><a href="/item/itemList" class="nav-link px-2 text-white">商品總覽</a></li>
+                    <li><a href="/" class="nav-link px-2 text-white">文章總覽</a></li>
+                    <li><a href="/orders/order-management" class="nav-link px-2 text-white">訂單總覽</a></li>
+                    <li><a href="/shipping/shipping-tracking" class="nav-link px-2 text-white">物流追蹤</a></li>
+                    <li><a href="/shipping-method/management" class="nav-link px-2 text-white">物流方式</a></li>
+                    <li><a href="/review/reviewManagement" class="nav-link px-2 text-white">評論總覽</a></li>
+                    <li><a href="/" class="nav-link px-2 text-white">客服表單總覽</a></li>
+                    <li><a href="/" class="nav-link px-2 text-white">FAQ文章總覽</a></li>
+                    <li><a href="/adInfo" class="nav-link px-2 text-white">廣告總覽</a></li>
+                    <li><a href="/category/list" class="nav-link px-2 text-white">商品樣式總覽</a></li>
+                    <li><a href="/brand/list" class="nav-link px-2 text-white">商品品牌總覽</a></li>
+                </ul>
+
+                <!-- 登出按鈕 -->
+                <div class="text-end">
+                    <button type="button" class="btn btn-outline-light me-2">登出</button>
+                </div>
+            </div>
+        </div>
+    </header>
+</body>
+</html>
